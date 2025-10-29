@@ -243,4 +243,241 @@ html, body {
     color: #000;
     text-align: center;
   }
+
+  /* Démineur modernisé */
+  #demineur-container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 6px 6px 10px;
+    box-sizing: border-box;
+    background: #c0c0c0;
+    font-family: "MS Sans Serif", "Segoe UI", sans-serif;
+    color: #000;
+    width: max-content;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .demineur-window .explorer-body {
+    position: static;
+    top: auto;
+    bottom: auto;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background-color: #c0c0c0;
+    overflow: hidden;
+  }
+
+  .demineur-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    background: #c0c0c0;
+    border: 2px solid #808080;
+    border-top-color: #ffffff;
+    border-left-color: #ffffff;
+    box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf;
+  }
+
+  .demineur-counter {
+    font-family: "Digital-7", "Courier New", monospace;
+    font-size: 1.1rem;
+    background: #000000;
+    color: #ff0000;
+    padding: 4px 6px;
+    min-width: 56px;
+    text-align: center;
+    letter-spacing: 2px;
+    border: 2px solid #404040;
+    border-top-color: #7f7f7f;
+    border-left-color: #7f7f7f;
+    box-shadow: inset -1px -1px 0 #202020, inset 1px 1px 0 #c0c0c0;
+  }
+
+  .demineur-face {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #808080;
+    border-top-color: #ffffff;
+    border-left-color: #ffffff;
+    background: linear-gradient(180deg, #44b94c 0%, #2a8a32 100%);
+    cursor: pointer;
+    box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf;
+    transition: transform 0.18s ease, filter 0.18s ease, background 0.18s ease;
+  }
+
+  .demineur-face:hover {
+    filter: brightness(1.08);
+  }
+
+  .demineur-face.is-pressed {
+    border-top-color: #404040;
+    border-left-color: #404040;
+    border-right-color: #ffffff;
+    border-bottom-color: #ffffff;
+    box-shadow: inset 1px 1px 0 #404040, inset -1px -1px 0 #dfdfdf;
+    transform: translate(1px, 1px);
+  }
+
+  .demineur-face.is-pop {
+    animation: demineur-face-pop 0.22s ease;
+  }
+
+  .demineur-face[data-state="ready"],
+  .demineur-face[data-state="tense"] {
+    background: linear-gradient(180deg, #44b94c 0%, #2a8a32 100%);
+  }
+
+  .demineur-face[data-state="tense"] {
+    filter: brightness(1.12);
+  }
+
+  .demineur-face[data-state="win"] {
+    background: linear-gradient(180deg, #50c95b 0%, #2f9b38 100%);
+  }
+
+  .demineur-face[data-state="lose"] {
+    background: linear-gradient(180deg, #3d9b45 0%, #25702b 100%);
+  }
+
+  @keyframes demineur-face-pop {
+    0% {
+      transform: scale(0.9);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .demineur-grid {
+    --cell-size: 24px;
+    display: grid;
+    grid-template-columns: repeat(var(--cols), var(--cell-size));
+    grid-template-rows: repeat(var(--rows), var(--cell-size));
+    gap: 2px;
+    padding: 6px;
+    background: #c0c0c0;
+    border: 2px solid #808080;
+    border-top-color: #ffffff;
+    border-left-color: #ffffff;
+    box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf;
+  }
+
+  .demineur-cell {
+    position: relative;
+    width: var(--cell-size);
+    height: var(--cell-size);
+    border: 2px solid #808080;
+    border-top-color: #ffffff;
+    border-left-color: #ffffff;
+    border-right-color: #404040;
+    border-bottom-color: #404040;
+    background: #c0c0c0;
+    cursor: pointer;
+    font-family: "MS Sans Serif", "Segoe UI", sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0000ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .demineur-cell:focus-visible {
+    outline: 1px dotted #000000;
+    outline-offset: -3px;
+  }
+
+  .demineur-cell.is-revealed {
+    cursor: default;
+    border: 1px solid #808080;
+    border-top-color: #b5b5b5;
+    border-left-color: #b5b5b5;
+    border-right-color: #404040;
+    border-bottom-color: #404040;
+    background: #c0c0c0;
+    box-shadow: inset 1px 1px 0 #ffffff;
+  }
+
+  .demineur-cell.has-number {
+    color: inherit;
+  }
+
+  .demineur-cell[data-value="1"] { color: #0000ff; }
+  .demineur-cell[data-value="2"] { color: #008000; }
+  .demineur-cell[data-value="3"] { color: #ff0000; }
+  .demineur-cell[data-value="4"] { color: #000080; }
+  .demineur-cell[data-value="5"] { color: #800000; }
+  .demineur-cell[data-value="6"] { color: #008080; }
+  .demineur-cell[data-value="7"] { color: #000000; }
+  .demineur-cell[data-value="8"] { color: #7f7f7f; }
+
+  .demineur-cell.is-flagged::after,
+  .demineur-cell.is-mine::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    background-repeat: no-repeat;
+    background-size: contain;
+    image-rendering: pixelated;
+  }
+
+  .demineur-cell.is-flagged::after {
+    background-image: url("Images/Other/Drapeau.png");
+  }
+
+  .demineur-cell.is-mine::after {
+    background-image: url("Images/Other/Bomb.png");
+  }
+
+  .demineur-cell.is-exploded {
+    background: #ffcccc;
+  }
+
+  .demineur-cell.is-wrong-flag {
+    background: #ffe6e6;
+    position: relative;
+  }
+
+  .demineur-cell.is-wrong-flag::before {
+    content: "✖";
+    position: absolute;
+    color: #ff0000;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .demineur-message {
+    width: 100%;
+    min-height: 24px;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 4px 6px;
+    background: #000080;
+    color: #ffffff;
+    border: 2px solid #000000;
+    border-top-color: #ffffff;
+    border-left-color: #ffffff;
+    box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #0d2b7e;
+  }
+
+  .demineur-message.is-active {
+    outline: 1px dotted #ffffff;
+    outline-offset: -4px;
+  }
+
+  .demineur-grid.is-complete .demineur-cell {
+    cursor: default;
+  }
   
