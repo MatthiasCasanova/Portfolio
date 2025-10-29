@@ -515,10 +515,38 @@ function createListeWindow(title, iconSrc) {
   return createStandardWindow(title, iconSrc, contentHTML);
 }
 
-// Fenêtre du démineur (360x420 px) : seuls la barre de titre et le conteneur du jeu sont affichés
+function resizeDemineurWindow(winEl, container) {
+  if (!winEl || !container || !winEl.isConnected) return;
+  const body = winEl.querySelector(".explorer-body");
+  const titleBar = winEl.querySelector(".explorer-title-bar");
+  if (!body || !titleBar) return;
+  const rect = container.getBoundingClientRect();
+  const styles = window.getComputedStyle(body);
+  const toNumber = (value) => Number.parseFloat(value) || 0;
+  const width = Math.ceil(
+    rect.width +
+      toNumber(styles.paddingLeft) +
+      toNumber(styles.paddingRight) +
+      toNumber(styles.borderLeftWidth) +
+      toNumber(styles.borderRightWidth)
+  );
+  const height = Math.ceil(
+    rect.height +
+      toNumber(styles.paddingTop) +
+      toNumber(styles.paddingBottom) +
+      toNumber(styles.borderTopWidth) +
+      toNumber(styles.borderBottomWidth)
+  );
+  winEl.style.width = `${width}px`;
+  winEl.style.height = `${height + titleBar.offsetHeight}px`;
+  centerWindow(winEl);
+}
+
+// Fenêtre du démineur : seuls la barre de titre et le conteneur du jeu sont affichés
 function createDemineurWindow(title, iconSrc) {
-  const contentHTML = `<div id="demineur-container" style="width:100%; height:100%;"></div>`;
+  const contentHTML = `<div id="demineur-container"></div>`;
   const winEl = createStandardWindow(title, iconSrc, contentHTML);
+  winEl.classList.add("demineur-window");
   winEl.style.width = "360px";
   winEl.style.height = "420px";
   centerWindow(winEl);
@@ -529,7 +557,14 @@ function createDemineurWindow(title, iconSrc) {
   const resizeHandle = winEl.querySelector(".explorer-resize-handle");
   if (resizeHandle) { resizeHandle.parentNode.removeChild(resizeHandle); }
   const container = winEl.querySelector("#demineur-container");
-  if (container && window.initDemineur) { window.initDemineur(container); }
+  if (container) {
+    const layoutHandler = () => resizeDemineurWindow(winEl, container);
+    container.addEventListener("demineur:layout", layoutHandler);
+    if (window.initDemineur) {
+      window.initDemineur(container);
+      layoutHandler();
+    }
+  }
   return winEl;
 }
 

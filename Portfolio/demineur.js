@@ -53,12 +53,7 @@
     faceButton.type = "button";
     faceButton.className = "demineur-face";
     faceButton.setAttribute("aria-label", "Recommencer une partie");
-
-    const faceEmoji = document.createElement("span");
-    faceEmoji.className = "demineur-face-emoji";
-    faceEmoji.setAttribute("aria-hidden", "true");
-    faceEmoji.textContent = "😊";
-    faceButton.appendChild(faceEmoji);
+    faceButton.dataset.state = "ready";
 
     const timeCounter = document.createElement("div");
     timeCounter.className = "demineur-counter";
@@ -83,6 +78,7 @@
     container.appendChild(messageDiv);
 
     const detachFacePress = addFacePressListeners(faceButton);
+    setFace("ready");
 
     faceButton.addEventListener("click", () => {
       faceButton.classList.add("is-pressed");
@@ -92,11 +88,11 @@
       initDemineur(container);
     });
 
-    function setFace(emoji) {
-      faceEmoji.textContent = emoji;
-      faceEmoji.classList.remove("is-pop");
-      void faceEmoji.offsetWidth;
-      faceEmoji.classList.add("is-pop");
+    function setFace(state) {
+      faceButton.dataset.state = state;
+      faceButton.classList.remove("is-pop");
+      void faceButton.offsetWidth;
+      faceButton.classList.add("is-pop");
     }
 
     function startTimer() {
@@ -126,6 +122,9 @@
       messageDiv.classList.remove("is-active");
       void messageDiv.offsetWidth;
       messageDiv.classList.add("is-active");
+      requestAnimationFrame(() => {
+        container.dispatchEvent(new CustomEvent("demineur:layout", { bubbles: true }));
+      });
     }
 
     function getNeighbors(row, col) {
@@ -239,11 +238,11 @@
       stopTimer();
       grid.classList.add("is-complete");
       if (victory) {
-        setFace("😎");
+        setFace("win");
         updateMessage("Bravo ! Toutes les bombes ont été neutralisées.");
         mineCounter.textContent = formatCounter(0);
       } else {
-        setFace("😵");
+        setFace("lose");
         updateMessage("Boom ! La partie est terminée.");
       }
       revealAll(victory);
@@ -286,9 +285,9 @@
         startTimer();
         updateMessage("Bonne chance !");
       }
-      setFace("😮");
+      setFace("tense");
       setTimeout(() => {
-        if (!state.gameOver) setFace("😊");
+        if (!state.gameOver) setFace("ready");
       }, 220);
       revealCell(cell);
     }
@@ -351,6 +350,10 @@
     }
 
     updateMessage("Cliquez sur une case pour commencer.");
+
+    requestAnimationFrame(() => {
+      container.dispatchEvent(new CustomEvent("demineur:layout", { bubbles: true }));
+    });
   }
 
   window.initDemineur = initDemineur;
