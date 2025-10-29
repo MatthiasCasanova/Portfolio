@@ -515,31 +515,58 @@ function createListeWindow(title, iconSrc) {
   return createStandardWindow(title, iconSrc, contentHTML);
 }
 
-function resizeDemineurWindow(winEl, container) {
+function resizeDemineurWindow(winEl, container, options = {}) {
   if (!winEl || !container || !winEl.isConnected) return;
   const body = winEl.querySelector(".explorer-body");
   const titleBar = winEl.querySelector(".explorer-title-bar");
   if (!body || !titleBar) return;
-  const rect = container.getBoundingClientRect();
-  const styles = window.getComputedStyle(body);
+
   const toNumber = (value) => Number.parseFloat(value) || 0;
-  const width = Math.ceil(
-    rect.width +
-      toNumber(styles.paddingLeft) +
-      toNumber(styles.paddingRight) +
-      toNumber(styles.borderLeftWidth) +
-      toNumber(styles.borderRightWidth)
+  const bodyStyles = window.getComputedStyle(body);
+  const winStyles = window.getComputedStyle(winEl);
+  const contentWidth = Math.max(
+    container.scrollWidth,
+    container.getBoundingClientRect().width
   );
-  const height = Math.ceil(
-    rect.height +
-      toNumber(styles.paddingTop) +
-      toNumber(styles.paddingBottom) +
-      toNumber(styles.borderTopWidth) +
-      toNumber(styles.borderBottomWidth)
+  const contentHeight = Math.max(
+    container.scrollHeight,
+    container.getBoundingClientRect().height
   );
-  winEl.style.width = `${width}px`;
-  winEl.style.height = `${height + titleBar.offsetHeight}px`;
-  centerWindow(winEl);
+
+  const horizontalChrome =
+    toNumber(bodyStyles.paddingLeft) +
+    toNumber(bodyStyles.paddingRight) +
+    toNumber(bodyStyles.borderLeftWidth) +
+    toNumber(bodyStyles.borderRightWidth) +
+    toNumber(winStyles.borderLeftWidth) +
+    toNumber(winStyles.borderRightWidth);
+
+  const verticalChrome =
+    toNumber(bodyStyles.paddingTop) +
+    toNumber(bodyStyles.paddingBottom) +
+    toNumber(bodyStyles.borderTopWidth) +
+    toNumber(bodyStyles.borderBottomWidth) +
+    toNumber(winStyles.borderTopWidth) +
+    toNumber(winStyles.borderBottomWidth) +
+    titleBar.offsetHeight;
+
+  const measuredWidth = Math.ceil(contentWidth + horizontalChrome);
+  const measuredHeight = Math.ceil(contentHeight + verticalChrome);
+
+  const previousWidth = Number.parseFloat(winEl.dataset.demineurWidth) || 0;
+  const previousHeight = Number.parseFloat(winEl.dataset.demineurHeight) || 0;
+
+  const finalWidth = Math.max(measuredWidth, previousWidth);
+  const finalHeight = Math.max(measuredHeight, previousHeight);
+
+  winEl.style.width = `${finalWidth}px`;
+  winEl.style.height = `${finalHeight}px`;
+  winEl.dataset.demineurWidth = String(finalWidth);
+  winEl.dataset.demineurHeight = String(finalHeight);
+
+  if (options.center) {
+    centerWindow(winEl);
+  }
 }
 
 // Fenêtre du démineur : seuls la barre de titre et le conteneur du jeu sont affichés
@@ -549,7 +576,6 @@ function createDemineurWindow(title, iconSrc) {
   winEl.classList.add("demineur-window");
   winEl.style.width = "360px";
   winEl.style.height = "420px";
-  centerWindow(winEl);
   const menuBar = winEl.querySelector(".explorer-menu-bar");
   if (menuBar) { menuBar.parentNode.removeChild(menuBar); }
   const statusBar = winEl.querySelector(".explorer-status-bar");
@@ -558,11 +584,34 @@ function createDemineurWindow(title, iconSrc) {
   if (resizeHandle) { resizeHandle.parentNode.removeChild(resizeHandle); }
   const container = winEl.querySelector("#demineur-container");
   if (container) {
-    const layoutHandler = () => resizeDemineurWindow(winEl, container);
+    let hasCentered = false;
+    const layoutHandler = () => {
+      resizeDemineurWindow(winEl, container, { center: !hasCentered });
+      if (!hasCentered) {
+        hasCentered = true;
+      }
+    };
     container.addEventListener("demineur:layout", layoutHandler);
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => layoutHandler());
+      resizeObserver.observe(container);
+    }
+    const cleanup = () => {
+      container.removeEventListener("demineur:layout", layoutHandler);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
+      }
+    };
+    const closeButton = winEl.querySelector(".window-close-btn");
+    if (closeButton) {
+      closeButton.addEventListener("click", cleanup, { once: true });
+    }
     if (window.initDemineur) {
       window.initDemineur(container);
       layoutHandler();
+      requestAnimationFrame(() => layoutHandler());
     }
   }
   return winEl;
