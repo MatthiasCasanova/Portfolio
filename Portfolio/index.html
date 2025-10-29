@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulation Windows 95 - Portfolio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Bureau -->
+  <div id="desktop">
+    <div class="desktop-icon" data-app="Jeu du démineur">
+      <img src="Images/Icons/Demineur.ico" alt="Jeu du démineur">
+      <div class="desktop-icon-label">Jeu du démineur</div>
+    </div>
+    <div class="desktop-icon" data-app="Projets">
+      <img src="Images/Icons/Folder.ico" alt="Projets">
+      <div class="desktop-icon-label">Projets</div>
+    </div>
+    <div class="desktop-icon" data-app="Documents">
+      <img src="Images/Icons/Folder.ico" alt="Documents">
+      <div class="desktop-icon-label">Documents</div>
+    </div>
+    <div class="desktop-icon" data-app="Multimédia">
+      <img src="Images/Icons/Folder.ico" alt="Multimédia">
+      <div class="desktop-icon-label">Multimédia</div>
+    </div>
+    <div class="desktop-icon" data-app="Jeux">
+      <img src="Images/Icons/Folder.ico" alt="Jeux">
+      <div class="desktop-icon-label">Jeux</div>
+    </div>
+  </div>
+
+  <!-- Barre des tâches -->
+  <div id="taskbar">
+    <button id="start-button">
+      <img src="Images/Icons/Windows.ico" alt="Démarrer">
+      <span>Démarrer</span>
+    </button>
+    <div id="taskbar-opened"></div>
+    <div id="clock"></div>
+  </div>
+
+  <!-- Menu Démarrer -->
+  <div id="start-menu">
+    <ul>
+      <li>Programmes</li>
+      <li>Documents</li>
+      <li>Paramètres</li>
+      <li>Rechercher</li>
+      <li>Exécuter</li>
+    </ul>
+  </div>
+  
+  <script src="demineur.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
