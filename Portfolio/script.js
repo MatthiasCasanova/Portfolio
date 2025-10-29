@@ -172,43 +172,59 @@ function arrangeExplorerItems(container) {
 }
 
 // Permettre le déplacement avec snap sur grille dans les explorateurs
+const explorerDragState = {
+  item: null,
+  container: null,
+  offsetX: 0,
+  offsetY: 0
+};
+
+document.addEventListener("mousemove", (event) => {
+  if (!explorerDragState.item) return;
+  event.preventDefault();
+  const { item, container, offsetX, offsetY } = explorerDragState;
+  const containerRect = container.getBoundingClientRect();
+  let newLeft = event.clientX - containerRect.left - offsetX;
+  let newTop = event.clientY - containerRect.top - offsetY;
+  newLeft = Math.max(0, Math.min(newLeft, containerRect.width - item.offsetWidth));
+  newTop = Math.max(0, Math.min(newTop, containerRect.height - item.offsetHeight));
+  item.style.left = newLeft + "px";
+  item.style.top = newTop + "px";
+});
+
+document.addEventListener("mouseup", () => {
+  if (!explorerDragState.item) return;
+  const { item, container } = explorerDragState;
+  const offset = 10;
+  const gridStep = 90;
+  const left = parseInt(item.style.left, 10);
+  const top = parseInt(item.style.top, 10);
+  const snappedLeft = offset + snapToGrid(left - offset, gridStep);
+  const snappedTop = offset + snapToGrid(top - offset, gridStep);
+  item.style.left = snappedLeft + "px";
+  item.style.top = snappedTop + "px";
+  item.style.zIndex = "1";
+  explorerDragState.item = null;
+  explorerDragState.container = null;
+  explorerDragState.offsetX = 0;
+  explorerDragState.offsetY = 0;
+});
+
 function enableExplorerItemDrag(container) {
-  const offset = 10, gridStep = 90;
-  let draggedItem = null, offsetX = 0, offsetY = 0;
-  container.querySelectorAll(".explorer-item").forEach((item) => {
-    item.addEventListener("mousedown", (event) => {
-      if (event.button !== 0) return;
-      draggedItem = item;
-      const containerRect = container.getBoundingClientRect();
-      offsetX = event.clientX - (item.offsetLeft + containerRect.left);
-      offsetY = event.clientY - (item.offsetTop + containerRect.top);
-      item.style.zIndex = "9999";
-      event.preventDefault();
-      event.stopPropagation();
-    });
-  });
-  document.addEventListener("mousemove", (event) => {
-    if (!draggedItem) return;
-    event.preventDefault();
+  if (container.dataset.dragInit === "true") return;
+  container.dataset.dragInit = "true";
+  container.addEventListener("mousedown", (event) => {
+    if (event.button !== 0) return;
+    const item = event.target.closest(".explorer-item");
+    if (!item || !container.contains(item)) return;
     const containerRect = container.getBoundingClientRect();
-    let newLeft = event.clientX - containerRect.left - offsetX;
-    let newTop = event.clientY - containerRect.top - offsetY;
-    newLeft = Math.max(0, Math.min(newLeft, containerRect.width - draggedItem.offsetWidth));
-    newTop = Math.max(0, Math.min(newTop, containerRect.height - draggedItem.offsetHeight));
-    draggedItem.style.left = newLeft + "px";
-    draggedItem.style.top = newTop + "px";
-  });
-  document.addEventListener("mouseup", () => {
-    if (draggedItem) {
-      let left = parseInt(draggedItem.style.left, 10);
-      let top = parseInt(draggedItem.style.top, 10);
-      let snappedLeft = offset + snapToGrid(left - offset, gridStep);
-      let snappedTop = offset + snapToGrid(top - offset, gridStep);
-      draggedItem.style.left = snappedLeft + "px";
-      draggedItem.style.top = snappedTop + "px";
-      draggedItem.style.zIndex = "1";
-      draggedItem = null;
-    }
+    explorerDragState.item = item;
+    explorerDragState.container = container;
+    explorerDragState.offsetX = event.clientX - containerRect.left - item.offsetLeft;
+    explorerDragState.offsetY = event.clientY - containerRect.top - item.offsetTop;
+    item.style.zIndex = "9999";
+    event.preventDefault();
+    event.stopPropagation();
   });
 }
 
@@ -226,7 +242,6 @@ function centerWindow(winEl) {
   const winHeight = winEl.offsetHeight;
   winEl.style.left = ((desktopRect.width - winWidth) / 2) + "px";
   winEl.style.top = ((desktopRect.height - winHeight) / 2) + "px";
-  arrangeDesktopIcons();
 }
 
 // Réparation de l'affichage des applications dans la barre des tâches
