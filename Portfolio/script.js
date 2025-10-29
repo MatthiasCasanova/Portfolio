@@ -572,66 +572,7 @@ function buildExplorerItems(folder) {
       </div>
     `;
   }
-  return htmlContent || `<p>(Dossier vide)</p>`;
-}
-
-function arrangeExplorerItems(container) {
-  const items = container.querySelectorAll(".explorer-item");
-  let posX = 10, posY = 10;
-  const stepX = 90, stepY = 90;
-  const maxIconsPerRow = Math.floor((container.clientWidth - 10) / stepX) || 1;
-  let count = 0;
-  items.forEach((item) => {
-    item.style.left = posX + "px";
-    item.style.top = posY + "px";
-    count++;
-    if (count % maxIconsPerRow === 0) {
-      posX = 10;
-      posY += stepY;
-    } else {
-      posX += stepX;
-    }
-  });
-}
-
-function enableExplorerItemDrag(container) {
-  const offset = 10, gridStep = 90;
-  let draggedItem = null, offsetX = 0, offsetY = 0;
-  container.querySelectorAll(".explorer-item").forEach((item) => {
-    item.addEventListener("mousedown", (event) => {
-      if (event.button !== 0) return;
-      draggedItem = item;
-      const containerRect = container.getBoundingClientRect();
-      offsetX = event.clientX - (item.offsetLeft + containerRect.left);
-      offsetY = event.clientY - (item.offsetTop + containerRect.top);
-      item.style.zIndex = "9999";
-      event.preventDefault();
-      event.stopPropagation();
-    });
-  });
-  document.addEventListener("mousemove", (event) => {
-    if (!draggedItem) return;
-    event.preventDefault();
-    const containerRect = container.getBoundingClientRect();
-    let newLeft = event.clientX - containerRect.left - offsetX;
-    let newTop = event.clientY - containerRect.top - offsetY;
-    newLeft = Math.max(0, Math.min(newLeft, containerRect.width - draggedItem.offsetWidth));
-    newTop = Math.max(0, Math.min(newTop, containerRect.height - draggedItem.offsetHeight));
-    draggedItem.style.left = newLeft + "px";
-    draggedItem.style.top = newTop + "px";
-  });
-  document.addEventListener("mouseup", () => {
-    if (draggedItem) {
-      let left = parseInt(draggedItem.style.left, 10);
-      let top = parseInt(draggedItem.style.top, 10);
-      let snappedLeft = offset + snapToGrid(left - offset, gridStep);
-      let snappedTop = offset + snapToGrid(top - offset, gridStep);
-      draggedItem.style.left = snappedLeft + "px";
-      draggedItem.style.top = snappedTop + "px";
-      draggedItem.style.zIndex = "1";
-      draggedItem = null;
-    }
-  });
+  return htmlContent;
 }
 
 function initExplorerItemDblClick(container) {
