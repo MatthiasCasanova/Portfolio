@@ -45,6 +45,10 @@ const fileSystem = {
     children: {
       "Autres jeux": { type: "folder", children: {} }
     }
+  },
+  "Game": {
+    type: "folder",
+    children: {}
   }
 };
 
@@ -172,43 +176,59 @@ function arrangeExplorerItems(container) {
 }
 
 // Permettre le déplacement avec snap sur grille dans les explorateurs
+const explorerDragState = {
+  item: null,
+  container: null,
+  offsetX: 0,
+  offsetY: 0
+};
+
+document.addEventListener("mousemove", (event) => {
+  if (!explorerDragState.item) return;
+  event.preventDefault();
+  const { item, container, offsetX, offsetY } = explorerDragState;
+  const containerRect = container.getBoundingClientRect();
+  let newLeft = event.clientX - containerRect.left - offsetX;
+  let newTop = event.clientY - containerRect.top - offsetY;
+  newLeft = Math.max(0, Math.min(newLeft, containerRect.width - item.offsetWidth));
+  newTop = Math.max(0, Math.min(newTop, containerRect.height - item.offsetHeight));
+  item.style.left = newLeft + "px";
+  item.style.top = newTop + "px";
+});
+
+document.addEventListener("mouseup", () => {
+  if (!explorerDragState.item) return;
+  const { item, container } = explorerDragState;
+  const offset = 10;
+  const gridStep = 90;
+  const left = parseInt(item.style.left, 10);
+  const top = parseInt(item.style.top, 10);
+  const snappedLeft = offset + snapToGrid(left - offset, gridStep);
+  const snappedTop = offset + snapToGrid(top - offset, gridStep);
+  item.style.left = snappedLeft + "px";
+  item.style.top = snappedTop + "px";
+  item.style.zIndex = "1";
+  explorerDragState.item = null;
+  explorerDragState.container = null;
+  explorerDragState.offsetX = 0;
+  explorerDragState.offsetY = 0;
+});
+
 function enableExplorerItemDrag(container) {
-  const offset = 10, gridStep = 90;
-  let draggedItem = null, offsetX = 0, offsetY = 0;
-  container.querySelectorAll(".explorer-item").forEach((item) => {
-    item.addEventListener("mousedown", (event) => {
-      if (event.button !== 0) return;
-      draggedItem = item;
-      const containerRect = container.getBoundingClientRect();
-      offsetX = event.clientX - (item.offsetLeft + containerRect.left);
-      offsetY = event.clientY - (item.offsetTop + containerRect.top);
-      item.style.zIndex = "9999";
-      event.preventDefault();
-      event.stopPropagation();
-    });
-  });
-  document.addEventListener("mousemove", (event) => {
-    if (!draggedItem) return;
-    event.preventDefault();
+  if (container.dataset.dragInit === "true") return;
+  container.dataset.dragInit = "true";
+  container.addEventListener("mousedown", (event) => {
+    if (event.button !== 0) return;
+    const item = event.target.closest(".explorer-item");
+    if (!item || !container.contains(item)) return;
     const containerRect = container.getBoundingClientRect();
-    let newLeft = event.clientX - containerRect.left - offsetX;
-    let newTop = event.clientY - containerRect.top - offsetY;
-    newLeft = Math.max(0, Math.min(newLeft, containerRect.width - draggedItem.offsetWidth));
-    newTop = Math.max(0, Math.min(newTop, containerRect.height - draggedItem.offsetHeight));
-    draggedItem.style.left = newLeft + "px";
-    draggedItem.style.top = newTop + "px";
-  });
-  document.addEventListener("mouseup", () => {
-    if (draggedItem) {
-      let left = parseInt(draggedItem.style.left, 10);
-      let top = parseInt(draggedItem.style.top, 10);
-      let snappedLeft = offset + snapToGrid(left - offset, gridStep);
-      let snappedTop = offset + snapToGrid(top - offset, gridStep);
-      draggedItem.style.left = snappedLeft + "px";
-      draggedItem.style.top = snappedTop + "px";
-      draggedItem.style.zIndex = "1";
-      draggedItem = null;
-    }
+    explorerDragState.item = item;
+    explorerDragState.container = container;
+    explorerDragState.offsetX = event.clientX - containerRect.left - item.offsetLeft;
+    explorerDragState.offsetY = event.clientY - containerRect.top - item.offsetTop;
+    item.style.zIndex = "9999";
+    event.preventDefault();
+    event.stopPropagation();
   });
 }
 
@@ -226,7 +246,6 @@ function centerWindow(winEl) {
   const winHeight = winEl.offsetHeight;
   winEl.style.left = ((desktopRect.width - winWidth) / 2) + "px";
   winEl.style.top = ((desktopRect.height - winHeight) / 2) + "px";
-  arrangeDesktopIcons();
 }
 
 // Réparation de l'affichage des applications dans la barre des tâches
@@ -496,13 +515,67 @@ function createListeWindow(title, iconSrc) {
   return createStandardWindow(title, iconSrc, contentHTML);
 }
 
-// Fenêtre du démineur (405x485 px) : seuls la barre de titre et le conteneur du jeu sont affichés
+function resizeDemineurWindow(winEl, container, options = {}) {
+  if (!winEl || !container || !winEl.isConnected) return;
+  const body = winEl.querySelector(".explorer-body");
+  const titleBar = winEl.querySelector(".explorer-title-bar");
+  if (!body || !titleBar) return;
+
+  const toNumber = (value) => Number.parseFloat(value) || 0;
+  const bodyStyles = window.getComputedStyle(body);
+  const winStyles = window.getComputedStyle(winEl);
+  const contentWidth = Math.max(
+    container.scrollWidth,
+    container.getBoundingClientRect().width
+  );
+  const contentHeight = Math.max(
+    container.scrollHeight,
+    container.getBoundingClientRect().height
+  );
+
+  const horizontalChrome =
+    toNumber(bodyStyles.paddingLeft) +
+    toNumber(bodyStyles.paddingRight) +
+    toNumber(bodyStyles.borderLeftWidth) +
+    toNumber(bodyStyles.borderRightWidth) +
+    toNumber(winStyles.borderLeftWidth) +
+    toNumber(winStyles.borderRightWidth);
+
+  const verticalChrome =
+    toNumber(bodyStyles.paddingTop) +
+    toNumber(bodyStyles.paddingBottom) +
+    toNumber(bodyStyles.borderTopWidth) +
+    toNumber(bodyStyles.borderBottomWidth) +
+    toNumber(winStyles.borderTopWidth) +
+    toNumber(winStyles.borderBottomWidth) +
+    titleBar.offsetHeight;
+
+  const measuredWidth = Math.ceil(contentWidth + horizontalChrome);
+  const measuredHeight = Math.ceil(contentHeight + verticalChrome);
+
+  const previousWidth = Number.parseFloat(winEl.dataset.demineurWidth) || 0;
+  const previousHeight = Number.parseFloat(winEl.dataset.demineurHeight) || 0;
+
+  const finalWidth = Math.max(measuredWidth, previousWidth);
+  const finalHeight = Math.max(measuredHeight, previousHeight);
+
+  winEl.style.width = `${finalWidth}px`;
+  winEl.style.height = `${finalHeight}px`;
+  winEl.dataset.demineurWidth = String(finalWidth);
+  winEl.dataset.demineurHeight = String(finalHeight);
+
+  if (options.center) {
+    centerWindow(winEl);
+  }
+}
+
+// Fenêtre du démineur : seuls la barre de titre et le conteneur du jeu sont affichés
 function createDemineurWindow(title, iconSrc) {
-  const contentHTML = `<div id="demineur-container" style="width:100%; height:100%;"></div>`;
+  const contentHTML = `<div id="demineur-container"></div>`;
   const winEl = createStandardWindow(title, iconSrc, contentHTML);
-  winEl.style.width = "405px";
-  winEl.style.height = "485px";
-  centerWindow(winEl);
+  winEl.classList.add("demineur-window");
+  winEl.style.width = "360px";
+  winEl.style.height = "420px";
   const menuBar = winEl.querySelector(".explorer-menu-bar");
   if (menuBar) { menuBar.parentNode.removeChild(menuBar); }
   const statusBar = winEl.querySelector(".explorer-status-bar");
@@ -510,7 +583,37 @@ function createDemineurWindow(title, iconSrc) {
   const resizeHandle = winEl.querySelector(".explorer-resize-handle");
   if (resizeHandle) { resizeHandle.parentNode.removeChild(resizeHandle); }
   const container = winEl.querySelector("#demineur-container");
-  if (container && window.initDemineur) { window.initDemineur(container); }
+  if (container) {
+    let hasCentered = false;
+    const layoutHandler = () => {
+      resizeDemineurWindow(winEl, container, { center: !hasCentered });
+      if (!hasCentered) {
+        hasCentered = true;
+      }
+    };
+    container.addEventListener("demineur:layout", layoutHandler);
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(() => layoutHandler());
+      resizeObserver.observe(container);
+    }
+    const cleanup = () => {
+      container.removeEventListener("demineur:layout", layoutHandler);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
+      }
+    };
+    const closeButton = winEl.querySelector(".window-close-btn");
+    if (closeButton) {
+      closeButton.addEventListener("click", cleanup, { once: true });
+    }
+    if (window.initDemineur) {
+      window.initDemineur(container);
+      layoutHandler();
+      requestAnimationFrame(() => layoutHandler());
+    }
+  }
   return winEl;
 }
 
@@ -557,66 +660,7 @@ function buildExplorerItems(folder) {
       </div>
     `;
   }
-  return htmlContent || `<p>(Dossier vide)</p>`;
-}
-
-function arrangeExplorerItems(container) {
-  const items = container.querySelectorAll(".explorer-item");
-  let posX = 10, posY = 10;
-  const stepX = 90, stepY = 90;
-  const maxIconsPerRow = Math.floor((container.clientWidth - 10) / stepX) || 1;
-  let count = 0;
-  items.forEach((item) => {
-    item.style.left = posX + "px";
-    item.style.top = posY + "px";
-    count++;
-    if (count % maxIconsPerRow === 0) {
-      posX = 10;
-      posY += stepY;
-    } else {
-      posX += stepX;
-    }
-  });
-}
-
-function enableExplorerItemDrag(container) {
-  const offset = 10, gridStep = 90;
-  let draggedItem = null, offsetX = 0, offsetY = 0;
-  container.querySelectorAll(".explorer-item").forEach((item) => {
-    item.addEventListener("mousedown", (event) => {
-      if (event.button !== 0) return;
-      draggedItem = item;
-      const containerRect = container.getBoundingClientRect();
-      offsetX = event.clientX - (item.offsetLeft + containerRect.left);
-      offsetY = event.clientY - (item.offsetTop + containerRect.top);
-      item.style.zIndex = "9999";
-      event.preventDefault();
-      event.stopPropagation();
-    });
-  });
-  document.addEventListener("mousemove", (event) => {
-    if (!draggedItem) return;
-    event.preventDefault();
-    const containerRect = container.getBoundingClientRect();
-    let newLeft = event.clientX - containerRect.left - offsetX;
-    let newTop = event.clientY - containerRect.top - offsetY;
-    newLeft = Math.max(0, Math.min(newLeft, containerRect.width - draggedItem.offsetWidth));
-    newTop = Math.max(0, Math.min(newTop, containerRect.height - draggedItem.offsetHeight));
-    draggedItem.style.left = newLeft + "px";
-    draggedItem.style.top = newTop + "px";
-  });
-  document.addEventListener("mouseup", () => {
-    if (draggedItem) {
-      let left = parseInt(draggedItem.style.left, 10);
-      let top = parseInt(draggedItem.style.top, 10);
-      let snappedLeft = offset + snapToGrid(left - offset, gridStep);
-      let snappedTop = offset + snapToGrid(top - offset, gridStep);
-      draggedItem.style.left = snappedLeft + "px";
-      draggedItem.style.top = snappedTop + "px";
-      draggedItem.style.zIndex = "1";
-      draggedItem = null;
-    }
-  });
+  return htmlContent;
 }
 
 function initExplorerItemDblClick(container) {

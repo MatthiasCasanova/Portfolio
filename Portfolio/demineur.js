@@ -1,165 +1,360 @@
-function initDemineur(container) {
-    // Configuration du jeu
-    const rows = 10, cols = 10, minesCount = 10;
-    let revealedCount = 0;
-    const totalCells = rows * cols;
-    let board = [];
-    
-    // Initialisation du plateau
-    for (let i = 0; i < rows; i++) {
-      board[i] = [];
-      for (let j = 0; j < cols; j++) {
-        board[i][j] = { mine: false, revealed: false, flagged: false, adjacent: 0 };
-      }
+(function () {
+  const numberColors = {
+    1: "#0000ff",
+    2: "#008000",
+    3: "#ff0000",
+    4: "#000080",
+    5: "#800000",
+    6: "#008080",
+    7: "#000000",
+    8: "#7f7f7f"
+  };
+
+  function formatCounter(value) {
+    const clamped = Math.max(-99, Math.min(999, value));
+    if (clamped < 0) {
+      return "-" + Math.abs(clamped).toString().padStart(2, "0");
     }
-    
-    // Placement aléatoire des mines
-    let placed = 0;
-    while (placed < minesCount) {
-      const r = Math.floor(Math.random() * rows);
-      const c = Math.floor(Math.random() * cols);
-      if (!board[r][c].mine) {
-        board[r][c].mine = true;
-        placed++;
-      }
-    }
-    
-    // Calcul des mines adjacentes pour chaque cellule
-    for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < cols; j++) {
-        if (board[i][j].mine) continue;
-        let count = 0;
-        for (let dr = -1; dr <= 1; dr++) {
-          for (let dc = -1; dc <= 1; dc++) {
-            const r = i + dr, c = j + dc;
-            if (r >= 0 && r < rows && c >= 0 && c < cols && board[r][c].mine) {
-              count++;
-            }
-          }
-        }
-        board[i][j].adjacent = count;
-      }
-    }
-    
-    // Réinitialisation et configuration du conteneur du jeu
-    container.innerHTML = "";
-    // Ajustement des dimensions pour 10 cellules de 35px
-    container.style.width = "385px";
-    container.style.height = "430px";
-    container.style.position = "relative";
-    container.style.display = "flex";
-    container.style.flexDirection = "column";
-    
-    // Zone de message
-    const messageDiv = document.createElement("div");
-    messageDiv.style.textAlign = "center";
-    messageDiv.style.margin = "10px";
-    messageDiv.style.fontWeight = "bold";
-    container.appendChild(messageDiv);
-    
-    // Création de la grille avec table-layout fixed pour des cellules carrées
-    const grid = document.createElement("table");
-    grid.style.borderCollapse = "collapse";
-    grid.style.margin = "0 auto";
-    grid.style.tableLayout = "fixed";
-    grid.style.width = `${cols * 35}px`;
-    container.appendChild(grid);
-    
-    // Génération de la grille avec des cellules de 35x35 pixels
-    for (let i = 0; i < rows; i++) {
-      const tr = document.createElement("tr");
-      for (let j = 0; j < cols; j++) {
-        const td = document.createElement("td");
-        td.style.width = "35px";
-        td.style.height = "35px";
-        td.style.border = "1px solid #000";
-        td.style.textAlign = "center";
-        td.style.verticalAlign = "middle";
-        td.style.backgroundColor = "#c0c0c0";
-        td.dataset.row = i;
-        td.dataset.col = j;
-        
-        // Clic gauche pour révéler la case
-        td.addEventListener("click", function(e) {
-          revealCell(i, j);
-          checkWin();
-        });
-        
-        // Clic droit pour marquer/démarquer la case
-        td.addEventListener("contextmenu", function(e) {
-          e.preventDefault(); // Empêche le menu contextuel du navigateur
-          toggleFlag(i, j);
-        });
-        
-        tr.appendChild(td);
-      }
-      grid.appendChild(tr);
-    }
-    
-    // Fonction pour révéler une cellule
-    function revealCell(i, j) {
-      if (i < 0 || i >= rows || j < 0 || j >= cols) return;
-      const cell = board[i][j];
-      const td = grid.rows[i].cells[j];
-      if (cell.revealed || cell.flagged) return;
-      cell.revealed = true;
-      revealedCount++;
-      td.style.backgroundColor = "#fff";
-      if (cell.mine) {
-        td.innerHTML = `<img src="Images/Other/Bomb.png" alt="" style="width:33px; height:33px; display:block; margin:auto;">`;
-        gameOver(false);
-        return;
-      } else if (cell.adjacent > 0) {
-        td.textContent = cell.adjacent;
-      } else {
-        for (let dr = -1; dr <= 1; dr++) {
-          for (let dc = -1; dc <= 1; dc++) {
-            if (dr === 0 && dc === 0) continue;
-            revealCell(i + dr, j + dc);
-          }
-        }
-      }
-    }
-    
-    // Fonction pour marquer/démarquer une cellule via clic droit
-    function toggleFlag(i, j) {
-      const cell = board[i][j];
-      const td = grid.rows[i].cells[j];
-      if (cell.revealed) return;
-      cell.flagged = !cell.flagged;
-      if (cell.flagged) {
-        td.innerHTML = `<img src="Images/Other/Drapeau.png" alt="" style="width:33px; height:33px; display:block; margin:auto;">`;
-      } else {
-        td.innerHTML = "";
-      }
-    }
-    
-    // Vérifie si le joueur a gagné
-    function checkWin() {
-      if (revealedCount === totalCells - minesCount) {
-        gameOver(true);
-      }
-    }
-    
-    // Fin de partie : affiche un message et un bouton de réinitialisation
-    function gameOver(won) {
-      grid.style.pointerEvents = "none";
-      messageDiv.innerHTML = "";
-      const resultMsg = document.createElement("div");
-      resultMsg.textContent = won ? "Félicitations ! Vous avez gagné !" : "Dommage, vous avez perdu.";
-      resultMsg.style.marginBottom = "10px";
-      messageDiv.appendChild(resultMsg);
-      
-      const resetBtn = document.createElement("button");
-      resetBtn.textContent = "Recommencer";
-      resetBtn.style.padding = "5px 10px";
-      resetBtn.style.cursor = "pointer";
-      resetBtn.addEventListener("click", () => {
-        initDemineur(container);
-      });
-      messageDiv.appendChild(resetBtn);
-    }
+    return clamped.toString().padStart(3, "0");
   }
-  
+
+  function initDemineur(container) {
+    const rows = 10;
+    const cols = 10;
+    const minesCount = 10;
+
+    const state = {
+      rows,
+      cols,
+      minesCount,
+      board: [],
+      firstClick: true,
+      revealedSafeCells: 0,
+      flagsPlaced: 0,
+      gameOver: false,
+      timerId: null,
+      startTime: null
+    };
+
+    container.innerHTML = "";
+    container.classList.add("demineur-root");
+    container.setAttribute("role", "application");
+    container.setAttribute("aria-label", "Jeu du démineur");
+
+    const header = document.createElement("div");
+    header.className = "demineur-header";
+
+    const mineCounter = document.createElement("div");
+    mineCounter.className = "demineur-counter";
+    mineCounter.textContent = formatCounter(minesCount);
+    mineCounter.setAttribute("aria-live", "polite");
+
+    const faceButton = document.createElement("button");
+    faceButton.type = "button";
+    faceButton.className = "demineur-face";
+    faceButton.setAttribute("aria-label", "Recommencer une partie");
+    faceButton.dataset.state = "ready";
+
+    const timeCounter = document.createElement("div");
+    timeCounter.className = "demineur-counter";
+    timeCounter.textContent = formatCounter(0);
+
+    header.appendChild(mineCounter);
+    header.appendChild(faceButton);
+    header.appendChild(timeCounter);
+
+    const grid = document.createElement("div");
+    grid.className = "demineur-grid";
+    grid.style.setProperty("--cols", cols);
+    grid.style.setProperty("--rows", rows);
+
+    const messageDiv = document.createElement("div");
+    messageDiv.className = "demineur-message";
+    messageDiv.setAttribute("aria-live", "polite");
+    messageDiv.textContent = "Cliquez sur une case pour commencer.";
+
+    container.appendChild(header);
+    container.appendChild(grid);
+    container.appendChild(messageDiv);
+
+    const detachFacePress = addFacePressListeners(faceButton);
+    setFace("ready");
+
+    faceButton.addEventListener("click", () => {
+      faceButton.classList.add("is-pressed");
+      setTimeout(() => faceButton.classList.remove("is-pressed"), 120);
+      stopTimer();
+      detachFacePress();
+      initDemineur(container);
+    });
+
+    function setFace(state) {
+      faceButton.dataset.state = state;
+      faceButton.classList.remove("is-pop");
+      void faceButton.offsetWidth;
+      faceButton.classList.add("is-pop");
+    }
+
+    function startTimer() {
+      state.startTime = Date.now();
+      timeCounter.textContent = formatCounter(0);
+      state.timerId = setInterval(() => {
+        if (state.gameOver) return;
+        const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+        timeCounter.textContent = formatCounter(elapsed);
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (state.timerId) {
+        clearInterval(state.timerId);
+        state.timerId = null;
+      }
+    }
+
+    function updateMineCounter() {
+      const remaining = state.minesCount - state.flagsPlaced;
+      mineCounter.textContent = formatCounter(remaining);
+    }
+
+    function updateMessage(text) {
+      messageDiv.textContent = text;
+      messageDiv.classList.remove("is-active");
+      void messageDiv.offsetWidth;
+      messageDiv.classList.add("is-active");
+      requestAnimationFrame(() => {
+        container.dispatchEvent(new CustomEvent("demineur:layout", { bubbles: true }));
+      });
+    }
+
+    function getNeighbors(row, col) {
+      const neighbors = [];
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const r = row + dr;
+          const c = col + dc;
+          if (r >= 0 && r < rows && c >= 0 && c < cols) {
+            neighbors.push(state.board[r][c]);
+          }
+        }
+      }
+      return neighbors;
+    }
+
+    function placeMines(excludeCell) {
+      const positions = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (r === excludeCell.row && c === excludeCell.col) continue;
+          positions.push({ r, c });
+        }
+      }
+      for (let i = positions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [positions[i], positions[j]] = [positions[j], positions[i]];
+      }
+      for (let i = 0; i < minesCount; i++) {
+        const pos = positions[i];
+        state.board[pos.r][pos.c].mine = true;
+      }
+      state.board.forEach((row) => {
+        row.forEach((cell) => {
+          if (cell.mine) {
+            cell.adjacent = 0;
+            return;
+          }
+          const neighbors = getNeighbors(cell.row, cell.col);
+          let count = 0;
+          neighbors.forEach((neighbor) => {
+            if (neighbor.mine) count++;
+          });
+          cell.adjacent = count;
+        });
+      });
+    }
+
+    function revealCell(startCell) {
+      const queue = [{ cell: startCell, depth: 0 }];
+      while (queue.length) {
+        const { cell, depth } = queue.shift();
+        if (cell.revealed || cell.flagged) continue;
+        cell.revealed = true;
+        const el = cell.element;
+        el.classList.add("is-revealed");
+        el.style.setProperty("--reveal-delay", `${Math.min(depth, 12) * 35}ms`);
+        el.setAttribute("aria-pressed", "true");
+        el.setAttribute("tabindex", "-1");
+        if (cell.mine) {
+          el.classList.add("is-mine", "is-exploded");
+          el.setAttribute("aria-label", "Bombe déclenchée");
+          endGame(false);
+          return;
+        }
+        state.revealedSafeCells++;
+        if (cell.adjacent > 0) {
+          el.dataset.value = cell.adjacent;
+          el.textContent = cell.adjacent;
+          el.classList.add("has-number");
+          el.style.color = numberColors[cell.adjacent] || "#212529";
+          el.setAttribute(
+            "aria-label",
+            `Case révélée avec ${cell.adjacent} mine${cell.adjacent > 1 ? "s" : ""} adjacente${cell.adjacent > 1 ? "s" : ""}`
+          );
+        } else {
+          el.classList.add("is-empty");
+          el.setAttribute("aria-label", "Case vide révélée");
+          getNeighbors(cell.row, cell.col).forEach((neighbor) => {
+            if (!neighbor.revealed && !neighbor.mine) {
+              queue.push({ cell: neighbor, depth: depth + 1 });
+            }
+          });
+        }
+      }
+      if (state.revealedSafeCells === rows * cols - minesCount) {
+        endGame(true);
+      }
+    }
+
+    function toggleFlag(cell) {
+      if (state.gameOver || cell.revealed) return;
+      cell.flagged = !cell.flagged;
+      const el = cell.element;
+      if (cell.flagged) {
+        state.flagsPlaced++;
+        el.classList.add("is-flagged");
+        el.setAttribute("aria-label", "Case marquée avec un drapeau");
+      } else {
+        state.flagsPlaced--;
+        el.classList.remove("is-flagged");
+        el.setAttribute("aria-label", "Case non révélée");
+      }
+      updateMineCounter();
+    }
+
+    function endGame(victory) {
+      if (state.gameOver) return;
+      state.gameOver = true;
+      stopTimer();
+      grid.classList.add("is-complete");
+      if (victory) {
+        setFace("win");
+        updateMessage("Bravo ! Toutes les bombes ont été neutralisées.");
+        mineCounter.textContent = formatCounter(0);
+      } else {
+        setFace("lose");
+        updateMessage("Boom ! La partie est terminée.");
+      }
+      revealAll(victory);
+    }
+
+    function revealAll(victory) {
+      state.board.forEach((row) => {
+        row.forEach((cell) => {
+          const el = cell.element;
+          el.setAttribute("tabindex", "-1");
+          el.setAttribute("aria-disabled", "true");
+          el.disabled = true;
+          if (cell.mine) {
+            if (victory) {
+              el.classList.add("is-flagged", "is-revealed");
+              el.setAttribute("aria-label", "Bombe correctement signalée");
+            } else {
+              el.classList.add("is-mine");
+              if (!el.classList.contains("is-revealed")) {
+                el.classList.add("is-revealed");
+                el.style.setProperty("--reveal-delay", `0ms`);
+              }
+              if (!el.classList.contains("is-exploded")) {
+                el.classList.add("is-mine-visible");
+              }
+              el.setAttribute("aria-label", "Bombe");
+            }
+          } else if (cell.flagged && !victory) {
+            el.classList.add("is-wrong-flag");
+          }
+        });
+      });
+    }
+
+    function handleReveal(cell) {
+      if (state.gameOver || cell.revealed || cell.flagged) return;
+      if (state.firstClick) {
+        state.firstClick = false;
+        placeMines(cell);
+        startTimer();
+        updateMessage("Bonne chance !");
+      }
+      setFace("tense");
+      setTimeout(() => {
+        if (!state.gameOver) setFace("ready");
+      }, 220);
+      revealCell(cell);
+    }
+
+    function createCell(row, col) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "demineur-cell";
+      button.setAttribute("data-row", row);
+      button.setAttribute("data-col", col);
+      button.setAttribute("aria-label", "Case non révélée");
+      button.setAttribute("aria-pressed", "false");
+      button.addEventListener("click", () => handleReveal(state.board[row][col]));
+      button.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+        toggleFlag(state.board[row][col]);
+      });
+      button.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleReveal(state.board[row][col]);
+        } else if (event.key.toLowerCase() === "f") {
+          event.preventDefault();
+          toggleFlag(state.board[row][col]);
+        }
+      });
+      return button;
+    }
+
+    for (let r = 0; r < rows; r++) {
+      state.board[r] = [];
+      for (let c = 0; c < cols; c++) {
+        const cell = {
+          row: r,
+          col: c,
+          mine: false,
+          revealed: false,
+          flagged: false,
+          adjacent: 0,
+          element: null
+        };
+        const button = createCell(r, c);
+        cell.element = button;
+        grid.appendChild(button);
+        state.board[r][c] = cell;
+      }
+    }
+
+    function addFacePressListeners(btn) {
+      const onMouseDown = () => btn.classList.add("is-pressed");
+      const onMouseUp = () => btn.classList.remove("is-pressed");
+      btn.addEventListener("mousedown", onMouseDown);
+      btn.addEventListener("mouseup", onMouseUp);
+      btn.addEventListener("mouseleave", onMouseUp);
+      return () => {
+        btn.removeEventListener("mousedown", onMouseDown);
+        btn.removeEventListener("mouseup", onMouseUp);
+        btn.removeEventListener("mouseleave", onMouseUp);
+      };
+    }
+
+    updateMessage("Cliquez sur une case pour commencer.");
+
+    requestAnimationFrame(() => {
+      container.dispatchEvent(new CustomEvent("demineur:layout", { bubbles: true }));
+    });
+  }
+
   window.initDemineur = initDemineur;
-  
+})();
