@@ -45,6 +45,10 @@ const fileSystem = {
     children: {
       "Autres jeux": { type: "folder", children: {} }
     }
+  },
+  "Game": {
+    type: "folder",
+    children: {}
   }
 };
 
@@ -511,12 +515,12 @@ function createListeWindow(title, iconSrc) {
   return createStandardWindow(title, iconSrc, contentHTML);
 }
 
-// Fenêtre du démineur (405x485 px) : seuls la barre de titre et le conteneur du jeu sont affichés
+// Fenêtre du démineur (360x420 px) : seuls la barre de titre et le conteneur du jeu sont affichés
 function createDemineurWindow(title, iconSrc) {
   const contentHTML = `<div id="demineur-container" style="width:100%; height:100%;"></div>`;
   const winEl = createStandardWindow(title, iconSrc, contentHTML);
-  winEl.style.width = "405px";
-  winEl.style.height = "485px";
+  winEl.style.width = "360px";
+  winEl.style.height = "420px";
   centerWindow(winEl);
   const menuBar = winEl.querySelector(".explorer-menu-bar");
   if (menuBar) { menuBar.parentNode.removeChild(menuBar); }
